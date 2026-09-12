@@ -1,129 +1,190 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;" />
-<title>Check</title>
-<link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; media-src 'self' data:;" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Check</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="titlebar">
-    <div class="titlebar-drag">
-      <span class="logo-dot"></span>
-      <span class="brand">Check</span>
-    </div>
-    <div class="win-controls">
-      <button id="min-btn" title="Minimize">&#8211;</button>
-      <button id="max-btn" title="Maximize">&#9633;</button>
-      <button id="close-btn" title="Close to tray">&times;</button>
-    </div>
+  <div class="ambient-background" aria-hidden="true">
+    <div class="star-layer stars-1"></div>
+    <div class="star-layer stars-2"></div>
+    <div class="star-layer stars-3"></div>
+    <div class="infinite-grid"></div>
   </div>
+  <header class="titlebar">
+    <div class="brand-zone">
+      <div class="brand-mark"><img src="../assets/logo.png" alt="" /></div>
+      <div class="brand-name">Check</div>
+    </div>
+    <div class="titlebar-drag"><div class="camera-notch" aria-hidden="true"></div></div>
+    <div class="window-controls">
+      <button id="min-btn" aria-label="Minimize"><span class="win-icon win-min"></span></button>
+      <button id="max-btn" aria-label="Maximize"><span class="win-icon win-max"></span></button>
+      <button id="close-btn" aria-label="Close"><span class="win-icon win-close"></span></button>
+    </div>
+  </header>
 
-  <div class="app-shell">
-    <nav class="sidebar">
-      <div class="nav-list">
-        <button class="nav-item active" data-page="dashboard"><span class="nav-icon">◈</span>Dashboard</button>
-        <button class="nav-item" data-page="clipboard"><span class="nav-icon">▤</span>Clipboard</button>
-        <button class="nav-item" data-page="temp"><span class="nav-icon">◐</span>Temp Cleaner</button>
-        <button class="nav-item" data-page="startup"><span class="nav-icon">▶</span>Startup Apps</button>
-        <button class="nav-item" data-page="screenshot"><span class="nav-icon">▣</span>Screenshot</button>
-        <button class="nav-item" data-page="launcher"><span class="nav-icon">✦</span>Quick Launcher</button>
-        <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span>Settings</button>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="nav-stack nav-middle">
+        <button class="nav-btn active" data-page="dashboard" title="Overview"><span class="asset-icon i-home"></span></button>
+        <button class="nav-btn" data-page="clipboard" title="Clipboard"><span class="asset-icon i-clipboard"></span></button>
+        <button class="nav-btn" data-page="temp" title="Temp cleaner"><span class="asset-icon i-cleaner"></span></button>
+        <button class="nav-btn" data-page="startup" title="Startup apps"><span class="asset-icon i-startup"></span></button>
+        <button class="nav-btn" data-page="screenshot" title="Screenshot"><span class="asset-icon i-screenshot"></span></button>
+        <button class="nav-btn" data-page="launcher" title="Quick launcher"><span class="asset-icon i-launcher"></span></button>
       </div>
-      <div class="nav-underline"></div>
-      <div class="update-pill" id="update-pill" hidden>
-        <span class="pulse-dot"></span>
-        <span id="update-pill-text">Checking for updates…</span>
+      <div class="nav-stack nav-bottom">
+        <button class="nav-btn" data-page="settings" title="Settings"><span class="asset-icon i-settings"></span></button>
       </div>
-    </nav>
+    </aside>
 
     <main class="content">
       <section class="page active" id="page-dashboard">
-        <h1>System Dashboard</h1>
-        <p class="sub">Live snapshot of this machine.</p>
-        <div class="grid" id="stats-grid"></div>
+        <div class="dashboard-heading">
+          <h1 class="hello-title">Hello, <span id="hello-user">there</span><span class="wave">👋</span></h1>
+          <div class="activity-loader" aria-hidden="true">
+            <span class="activity-prefix">Check keeps</span>
+            <div class="activity-words">
+              <span>clipboard</span><span>system</span><span>captures</span><span>startup</span><span>clipboard</span>
+            </div>
+            <span class="activity-suffix">ready</span>
+          </div>
+        </div>
+
+        <div class="dashboard-grid nighty-grid">
+          <div class="dashboard-left">
+            <article class="glass-card profile-card">
+              <div class="profile-top">
+                <div class="profile-identity">
+                  <div class="profile-avatar-wrap">
+                    <div class="profile-avatar"><img src="../assets/logo.png" alt="Check" /></div>
+                    <span class="presence-dot"></span>
+                  </div>
+                  <div class="profile-copy">
+                    <div class="profile-badges"><span class="badge-icon">✓</span><span class="badge-icon cyan">#</span></div>
+                    <h2 id="profile-name">zyless</h2>
+                    <p id="profile-handle">@zyless</p>
+                  </div>
+                </div>
+                <div class="profile-actions">
+                  <button class="primary-button" data-go="clipboard">Open Clipboard</button>
+                  <button class="secondary-button" data-go="screenshot">Capture screen</button>
+                </div>
+              </div>
+
+              <div class="profile-divider"></div>
+
+              <div class="profile-bottom">
+                <div class="profile-details">
+                  <div class="detail-pair"><span>Device</span><strong id="profile-device">Loading...</strong></div>
+                  <div class="detail-pair"><span>System</span><strong id="profile-system">Windows</strong></div>
+                  <div class="detail-pair"><span>Processor</span><strong id="profile-cpu">Loading...</strong></div>
+                </div>
+                <div class="profile-gauges" id="profile-gauges"></div>
+              </div>
+            </article>
+
+            <article class="glass-card status-card">
+              <div class="status-metrics">
+                <div class="metric-block">
+                  <div class="metric-chip"><span class="tiny-logo">C</span> Version</div>
+                  <strong id="dashboard-version">—</strong>
+                </div>
+                <div class="metric-block">
+                  <div class="metric-chip"><span class="asset-icon i-clipboard"></span> Clipboard items</div>
+                  <strong id="dashboard-clip-count">0</strong>
+                </div>
+                <div class="metric-block uptime-block">
+                  <div class="metric-chip"><span class="clock-dot"></span> Uptime</div>
+                  <div class="uptime-display" id="dashboard-uptime">00 <i>DD</i> 00 <i>HH</i> 00 <i>MM</i></div>
+                </div>
+              </div>
+              <div class="status-toggles">
+                <div class="toggle-tile">
+                  <div><strong>Launch at login</strong><span>Open Check with Windows</span></div>
+                  <label class="switch"><input type="checkbox" id="dashboard-login-toggle" /><span></span></label>
+                </div>
+                <div class="toggle-tile">
+                  <div><strong>Smooth transitions</strong><span>Interface animations</span></div>
+                  <label class="switch"><input type="checkbox" id="dashboard-motion-toggle" checked /><span></span></label>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <article class="glass-card notification-center">
+            <div class="notification-header">
+              <div class="notification-heading"><span class="bell-glyph">●</span><h2>Notification Center</h2></div>
+              <button class="square-action" id="clear-notifications" title="Clear notifications"><span class="asset-icon i-cleaner"></span></button>
+            </div>
+            <div class="notification-scroll" id="notification-list"></div>
+          </article>
+        </div>
       </section>
 
       <section class="page" id="page-clipboard">
-        <h1>Clipboard Manager</h1>
-        <p class="sub">Everything you've copied recently. Click any entry to copy it again.</p>
-        <div class="row">
-          <button class="btn ghost" id="clear-clip">Clear history</button>
-        </div>
-        <div class="list" id="clip-list"></div>
+        <div class="page-heading"><div><p class="eyebrow">CLIPBOARD</p><h1>Clipboard Center</h1><p class="subcopy">Text, links, screenshots, images and copied files are saved locally.</p></div><div class="heading-actions"><button class="soft-button" id="refresh-clip"><span class="asset-icon i-refresh"></span>Refresh</button><button class="soft-button danger" id="clear-clip"><span class="asset-icon i-delete"></span>Clear all</button></div></div>
+        <div class="glass-card toolbar"><div class="search-wrap"><span class="asset-icon i-search"></span><input id="clip-search" placeholder="Search clipboard history" /></div><span class="mini-badge" id="clip-count">0 items</span></div>
+        <div id="clip-list" class="clipboard-grid"></div>
       </section>
 
       <section class="page" id="page-temp">
-        <h1>Temp Cleaner</h1>
-        <p class="sub">Safely review and clear your temp folder.</p>
-        <div class="row">
-          <button class="btn" id="scan-temp">Scan</button>
-          <button class="btn danger" id="clean-temp">Clean selected</button>
-          <span class="sub" id="temp-path"></span>
-        </div>
-        <div class="list" id="temp-list"></div>
+        <div class="page-heading"><div><p class="eyebrow">CLEANER</p><h1>Temporary Files</h1><p class="subcopy">Review Windows temp files before deleting anything.</p></div><div class="heading-actions"><button class="soft-button" id="scan-temp"><span class="asset-icon i-refresh"></span>Scan</button><button class="soft-button danger" id="clean-temp"><span class="asset-icon i-delete"></span>Clean selected</button></div></div>
+        <div class="glass-card toolbar"><label class="checkline"><input type="checkbox" id="select-all-temp" /> Select all</label><span class="mini-badge" id="temp-summary">Run a scan to begin</span></div>
+        <div class="glass-card table-panel"><div class="table-head"><span>Name</span><span>Type</span><span>Size</span></div><div id="temp-list" class="table-list empty-state">No scan yet.</div></div>
       </section>
 
       <section class="page" id="page-startup">
-        <h1>Startup Apps</h1>
-        <p class="sub">Programs launching automatically with Windows.</p>
-        <div class="list" id="startup-list"></div>
+        <div class="page-heading"><div><p class="eyebrow">STARTUP</p><h1>Startup Apps</h1><p class="subcopy">Manage apps registered to start with Windows.</p></div><button class="soft-button" id="refresh-startup"><span class="asset-icon i-refresh"></span>Refresh</button></div>
+        <div id="startup-list" class="stack-list"></div>
       </section>
 
       <section class="page" id="page-screenshot">
-        <h1>Screenshot</h1>
-        <p class="sub">Capture your screen instantly, saved to Pictures.</p>
-        <div class="row">
-          <button class="btn" id="take-shot">Capture screen</button>
-          <button class="btn ghost" id="open-shot-folder">Open folder</button>
-        </div>
-        <div id="shot-preview"></div>
+        <div class="page-heading"><div><p class="eyebrow">CAPTURE</p><h1>Screenshot</h1><p class="subcopy">Capture your primary display and save it to Pictures.</p></div></div>
+        <div class="glass-card center-card"><div class="large-icon"><span class="asset-icon i-screenshot"></span></div><h2>Ready to capture</h2><p>Saved to <strong>Pictures\Check Screenshots</strong>.</p><div class="center-actions"><button class="primary-button" id="take-shot">Capture screen</button><button class="soft-button" id="open-shot-folder"><span class="asset-icon i-folder"></span>Open folder</button></div><div id="shot-preview" class="path-result"></div></div>
       </section>
 
       <section class="page" id="page-launcher">
-        <h1>Quick Launcher</h1>
-        <p class="sub">Press <kbd>Ctrl+Shift+Space</kbd> anywhere to open a spotlight-style launcher for your pinned apps and files.</p>
-        <div class="row">
-          <button class="btn" id="add-pin">Pin a file or app</button>
-        </div>
-        <div class="list" id="pins-list"></div>
+        <div class="page-heading"><div><p class="eyebrow">LAUNCHER</p><h1>Quick Launcher</h1><p class="subcopy">Pin your apps and files. Open anywhere with Ctrl + Shift + Space.</p></div><button class="primary-button" id="add-pin"><span class="asset-icon i-plus"></span>Pin item</button></div>
+        <div id="pins-list" class="pin-grid"></div>
       </section>
 
       <section class="page" id="page-settings">
-        <h1>Settings</h1>
-        <p class="sub">Updates and preferences.</p>
-        <div class="settings-card">
-          <div class="settings-row">
-            <div>
-              <div class="settings-title">Launch Check at login</div>
-              <div class="settings-desc">Start automatically when Windows starts.</div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="login-toggle" />
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="settings-row">
-            <div>
-              <div class="settings-title">Software updates</div>
-              <div class="settings-desc" id="update-status-text">Up to date.</div>
-            </div>
-            <button class="btn ghost" id="check-updates-btn">Check now</button>
-          </div>
-          <div class="settings-row" id="install-update-row" hidden>
-            <div>
-              <div class="settings-title">Update ready</div>
-              <div class="settings-desc">Restart to install the latest version.</div>
-            </div>
-            <button class="btn" id="install-update-btn">Restart &amp; Install</button>
-          </div>
+        <div class="page-heading settings-heading"><div><p class="eyebrow">SETTINGS</p><h1>Settings</h1><p class="subcopy">Configure how Check behaves on your PC.</p></div></div>
+        <div class="module-grid">
+          <article class="module-card">
+            <div class="module-main"><div class="module-icon"><span class="asset-icon i-startup"></span></div><div><h2>Launch at Login</h2><p>Start Check automatically when you sign into Windows.</p></div></div>
+            <div class="module-footer"><span>Startup behavior</span><label class="switch"><input type="checkbox" id="login-toggle" /><span></span></label></div>
+          </article>
+          <article class="module-card">
+            <div class="module-main"><div class="module-icon"><span class="asset-icon i-home"></span></div><div><h2>Smooth Transitions</h2><p>Use subtle page, hover and panel animations throughout Check.</p></div></div>
+            <div class="module-footer"><span>Interface motion</span><label class="switch"><input type="checkbox" id="motion-toggle" checked /><span></span></label></div>
+          </article>
+          <article class="module-card">
+            <div class="module-main"><div class="module-icon"><span class="asset-icon i-update"></span></div><div><h2>Automatic Updates</h2><p id="update-status-text">Check is ready.</p></div></div>
+            <div class="module-footer"><button class="module-button" id="check-updates-btn">Check for update</button><button class="primary-button compact" id="install-update-btn" hidden>Restart & install</button></div>
+          </article>
+          <article class="module-card">
+            <div class="module-main"><div class="module-icon"><span class="asset-icon i-settings"></span></div><div><h2>About Check</h2><p>A local Windows utility for clipboard, cleanup, screenshots, startup apps and quick launching.</p></div></div>
+            <div class="module-footer"><span>Installed version</span><strong id="app-version">v—</strong></div>
+          </article>
         </div>
       </section>
     </main>
   </div>
 
+  <div class="context-menu" id="clip-context-menu">
+    <button class="context-option" data-context-action="copy"><span class="asset-icon i-copy"></span><span>Copy again</span></button>
+    <button class="context-option" data-context-action="open"><span class="asset-icon i-external"></span><span>Open item</span></button>
+    <button class="context-option" data-context-action="show"><span class="asset-icon i-folder"></span><span>Show in folder</span></button>
+    <div class="separator"></div>
+    <button class="context-option danger" data-context-action="delete"><span class="asset-icon i-delete"></span><span>Delete</span></button>
+  </div>
   <div class="toast-stack" id="toast-stack"></div>
-
   <script src="renderer.js"></script>
 </body>
 </html>

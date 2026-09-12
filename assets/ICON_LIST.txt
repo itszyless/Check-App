@@ -1,0 +1,35 @@
+CHECK ICON ASSET NAMES
+
+Put your black transparent PNG icons in this folder using these exact filenames.
+The app uses them as CSS masks, so black icons are perfect: Check recolors them automatically.
+
+REQUIRED SIDEBAR
+home.png        Dashboard / overview (you already have this)
+clipboard.png   Clipboard history
+cleaner.png     Temp cleaner / trash / broom
+startup.png     Startup apps / power / rocket
+screenshot.png  Screenshot / camera / crop
+launcher.png    Quick launcher / lightning / command
+settings.png    Settings / gear
+
+GENERAL UI
+action.png      Generic quick action / magic wand (optional; fallback icon)
+refresh.png     Refresh / sync
+search.png      Search
+copy.png        Copy
+delete.png      Delete / trash
+folder.png      Folder / open location
+pin.png         Pin
+update.png      Download / update
+plus.png        Add / plus
+external.png    Open externally / arrow
+
+CLIPBOARD TYPES
+text.png        Text / document
+link.png        Link / chain
+image.png       Image / photo
+video.png       Video / play
+file.png        Generic file
+
+All files should be transparent PNGs, ideally 64x64 or 128x128, with the icon centered.
+Do not add text inside the icons.

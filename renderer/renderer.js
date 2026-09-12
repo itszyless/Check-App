@@ -1,234 +1,71 @@
-// ---------- helpers ----------
-function toast(msg) {
-  const stack = document.getElementById('toast-stack');
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  stack.appendChild(el);
-  setTimeout(() => el.remove(), 3600);
-}
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
 
-function fmtBytes(n) {
-  if (!n || n <= 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let i = 0;
-  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
-  return `${n.toFixed(1)} ${units[i]}`;
-}
-
-function fmtUptime(sec) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  return `${h}h ${m}m`;
-}
-
-// ---------- window controls ----------
-document.getElementById('min-btn').onclick = () => window.check.winMinimize();
-document.getElementById('max-btn').onclick = () => window.check.winMaximize();
-document.getElementById('close-btn').onclick = () => window.check.winClose();
-
-// ---------- navigation ----------
-const navItems = document.querySelectorAll('.nav-item');
-navItems.forEach(btn => {
-  btn.addEventListener('click', () => {
-    navItems.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const page = document.getElementById('page-' + btn.dataset.page);
-    page.classList.add('active');
-    onPageShown(btn.dataset.page);
-  });
-});
-
-function onPageShown(page) {
-  if (page === 'dashboard') refreshStats();
-  if (page === 'startup') refreshStartup();
-  if (page === 'launcher') refreshPins();
-  if (page === 'settings') refreshSettings();
-}
-
-// ---------- dashboard ----------
-async function refreshStats() {
-  const s = await window.check.getStats();
-  const grid = document.getElementById('stats-grid');
-  const memUsed = s.totalMem - s.freeMem;
-  const memPct = Math.round((memUsed / s.totalMem) * 100);
-
-  let disksHtml = '';
-  s.disks.forEach((d, i) => {
-    const used = d.size - d.free;
-    const pct = Math.round((used / d.size) * 100);
-    disksHtml += `
-      <div class="card" style="animation-delay:${0.05 * (i + 3)}s">
-        <div class="label">Drive ${d.caption}</div>
-        <div class="value">${fmtBytes(used)} / ${fmtBytes(d.size)}</div>
-        <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
-      </div>`;
-  });
-
-  grid.innerHTML = `
-    <div class="card" style="animation-delay:.02s">
-      <div class="label">Memory</div>
-      <div class="value">${memPct}%</div>
-      <div class="bar"><div class="bar-fill" style="width:${memPct}%"></div></div>
-    </div>
-    <div class="card" style="animation-delay:.06s">
-      <div class="label">CPU</div>
-      <div class="value">${s.cpuCount} cores</div>
-      <div class="meta" style="color:var(--text-dim);font-size:11.5px;margin-top:6px">${s.cpuModel}</div>
-    </div>
-    <div class="card" style="animation-delay:.10s">
-      <div class="label">Uptime</div>
-      <div class="value">${fmtUptime(s.uptimeSec)}</div>
-    </div>
-    <div class="card" style="animation-delay:.14s">
-      <div class="label">System</div>
-      <div class="value" style="font-size:15px">${s.platform}</div>
-      <div class="meta" style="color:var(--text-dim);font-size:11.5px;margin-top:6px">${s.hostname}</div>
-    </div>
-    ${disksHtml}
-  `;
-}
-setInterval(() => {
-  if (document.getElementById('page-dashboard').classList.contains('active')) refreshStats();
-}, 4000);
-
-// ---------- clipboard ----------
-function renderClipboard(history) {
-  const list = document.getElementById('clip-list');
-  if (!history.length) { list.innerHTML = `<div class="sub">No clipboard history yet — copy something!</div>`; return; }
-  list.innerHTML = history.map((c, i) => `
-    <div class="list-item" style="animation-delay:${i * 0.02}s">
-      <span>${escapeHtml(c.text).slice(0, 90)}</span>
-      <button data-idx="${i}" class="copy-again">Copy</button>
-    </div>
-  `).join('');
-  list.querySelectorAll('.copy-again').forEach(btn => {
-    btn.onclick = () => {
-      const item = history[+btn.dataset.idx];
-      window.check.copyToClipboard(item.text);
-      toast('Copied to clipboard');
-    };
-  });
-}
-function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-window.check.onClipboardHistory(renderClipboard);
-window.check.getClipboardHistory().then(renderClipboard);
-document.getElementById('clear-clip').onclick = async () => {
-  await window.check.clearClipboardHistory();
-  renderClipboard([]);
-  toast('Clipboard history cleared');
-};
-
-// ---------- temp cleaner ----------
+let clipboardData = [];
 let tempEntries = [];
-document.getElementById('scan-temp').onclick = async () => {
-  const { dir, entries } = await window.check.scanTemp();
-  tempEntries = entries;
-  document.getElementById('temp-path').textContent = dir;
-  const list = document.getElementById('temp-list');
-  if (!entries.length) { list.innerHTML = `<div class="sub">Nothing found (or scan blocked by permissions).</div>`; return; }
-  list.innerHTML = entries.map((e, i) => `
-    <div class="list-item" style="animation-delay:${i * 0.01}s">
-      <span><input type="checkbox" data-idx="${i}" class="temp-check" />${escapeHtml(e.name)}</span>
-      <span class="meta">${e.isDir ? 'folder' : fmtBytes(e.size)}</span>
-    </div>
-  `).join('');
-};
-document.getElementById('clean-temp').onclick = async () => {
-  const checked = [...document.querySelectorAll('.temp-check:checked')].map(c => tempEntries[+c.dataset.idx].path);
-  if (!checked.length) { toast('Select items to clean first'); return; }
-  const res = await window.check.cleanTemp(checked);
-  toast(`Cleaned ${res.cleaned} items · freed ${fmtBytes(res.freed)}`);
-  document.getElementById('scan-temp').click();
-};
+let currentPage = 'dashboard';
+let systemSnapshot = null;
+let notifications = [];
+let appInfo = null;
+let contextClipboardId = null;
 
-// ---------- startup manager ----------
-async function refreshStartup() {
-  const apps = await window.check.listStartup();
-  const list = document.getElementById('startup-list');
-  if (!apps.length) { list.innerHTML = `<div class="sub">No startup entries found (Windows only, or none registered).</div>`; return; }
-  list.innerHTML = apps.map((a, i) => `
-    <div class="list-item" style="animation-delay:${i * 0.02}s">
-      <span>${escapeHtml(a.name)}<div class="meta">${escapeHtml(a.command).slice(0, 70)}</div></span>
-      <button data-name="${escapeHtml(a.name)}" class="remove-startup">Remove</button>
-    </div>
-  `).join('');
-  list.querySelectorAll('.remove-startup').forEach(btn => {
-    btn.onclick = async () => {
-      await window.check.removeStartup(btn.dataset.name);
-      toast(`Removed "${btn.dataset.name}" from startup`);
-      refreshStartup();
-    };
-  });
+function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtBytes(value) { let n=Number(value||0); if(n<=0)return'0 B'; const u=['B','KB','MB','GB','TB']; let i=0; while(n>=1024&&i<u.length-1){n/=1024;i++} return `${n.toFixed(i?1:0)} ${u[i]}`; }
+function pad(n){return String(Math.max(0,Math.floor(n))).padStart(2,'0')}
+function fmtUptimeDetailed(sec){const d=Math.floor(sec/86400),h=Math.floor((sec%86400)/3600),m=Math.floor((sec%3600)/60);return `${pad(d)} <i>DD</i> ${pad(h)} <i>HH</i> ${pad(m)} <i>MM</i>`}
+function relativeTime(time){const diff=Math.max(0,Date.now()-Number(time||Date.now()));const s=Math.floor(diff/1000);if(s<60)return`${s} second${s===1?'':'s'} ago`;const m=Math.floor(s/60);if(m<60)return`${m} minute${m===1?'':'s'} ago`;const h=Math.floor(m/60);if(h<24)return`${h} hour${h===1?'':'s'} ago`;const d=Math.floor(h/24);return`${d} day${d===1?'':'s'} ago`}
+function refreshRelativeTimes(){$$('[data-relative-time]').forEach(el=>el.textContent=relativeTime(Number(el.dataset.relativeTime)))}
+function toast(message,type='success'){const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=message;$('#toast-stack').appendChild(el);setTimeout(()=>el.remove(),3000)}
+function addNotification(title,kind='info',detail='Check',time=Date.now(),key=null){if(key&&notifications.some(n=>n.key===key))return;notifications.unshift({id:crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`,title,kind,detail,time,key});notifications=notifications.slice(0,20);renderNotifications()}
+function renderNotifications(){const list=$('#notification-list');if(!notifications.length){list.innerHTML='<div class="notification-empty">No notifications yet.<br>Check will show clipboard, cleaner, screenshot and update activity here.</div>';return}list.innerHTML=notifications.map(n=>{const cls=n.kind==='success'?'success':n.kind==='warn'?'warn':'';const icon=n.kind==='warn'?'i-settings':n.kind==='success'?'i-clipboard':'i-update';return `<div class="notification-item"><div class="notification-icon ${cls}"><span class="asset-icon ${icon}"></span></div><div class="notification-content"><strong>${escapeHtml(n.title)}</strong><div class="notification-meta"><b data-relative-time="${Number(n.time)}">${relativeTime(n.time)}</b><br>${escapeHtml(n.detail)}</div></div></div>`}).join('')}
+
+function closeContextMenu(){const menu=$('#clip-context-menu');if(menu)menu.classList.remove('open');contextClipboardId=null}
+function openClipboardContextMenu(e,id){const menu=$('#clip-context-menu');const item=clipboardData.find(x=>x.id===id);if(!menu||!item)return;contextClipboardId=id;menu.querySelector('[data-context-action="open"]').hidden=item.type==='text';menu.querySelector('[data-context-action="show"]').hidden=!(item.path||item.mediaPath);const x=Math.min(e.clientX,window.innerWidth-220),y=Math.min(e.clientY,window.innerHeight-185);menu.style.left=`${Math.max(8,x)}px`;menu.style.top=`${Math.max(8,y)}px`;menu.classList.add('open')}
+async function runContextAction(action){const id=contextClipboardId;if(!id)return;closeContextMenu();if(action==='copy'){const r=await window.check.copyClipboardItem(id);toast(r.ok?'Copied.':'Could not copy.',r.ok?'success':'error')}else if(action==='open'){const r=await window.check.openClipboardItem(id);if(!r.ok)toast('Could not open item.','error')}else if(action==='show'){const r=await window.check.showClipboardItem(id);if(!r.ok)toast('Could not locate item.','error')}else if(action==='delete'){clipboardData=await window.check.removeClipboardItem(id);renderClipboard();updateClipboardDashboard()}}
+
+function switchPage(page){if(!page||page===currentPage)return;currentPage=page;$$('.page').forEach(el=>el.classList.toggle('active',el.id===`page-${page}`));$$('.nav-btn').forEach(el=>el.classList.toggle('active',el.dataset.page===page));if(page==='startup')loadStartup();if(page==='launcher')loadPins();if(page==='clipboard')renderClipboard()}
+function typeMeta(item){if(item.type==='link')return['Link','i-link'];if(item.type==='image'||item.type==='image-file')return['Image','i-image'];if(item.type==='video')return['Video','i-video'];if(item.type==='file')return['File','i-file'];return['Text','i-text']}
+function itemTitle(item){if(item.type==='text'||item.type==='link')return item.text||'';return item.name||item.path||'Clipboard item'}
+function gaugeMarkup(label,id){return `<div class="mini-gauge" data-gauge="${id}"><div class="gauge-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="gaugeBlue${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#65ddff"/><stop offset="55%" stop-color="#2ca9ef"/><stop offset="100%" stop-color="#4d6ff5"/></linearGradient></defs><circle class="track" cx="50" cy="50" r="40" pathLength="100"/><circle class="progress" cx="50" cy="50" r="40" pathLength="100" stroke="url(#gaugeBlue${id})"/></svg><div class="gauge-copy"><b>0%</b><span>/100</span></div></div><span class="gauge-label">${escapeHtml(label)}</span></div>`}
+function ensureGauges(){const root=$('#profile-gauges');if(!root.querySelector('[data-gauge="cpu"]'))root.innerHTML=gaugeMarkup('CPU','cpu')+gaugeMarkup('Memory','mem')}
+function setGauge(id,pct){const p=Math.max(0,Math.min(100,Number(pct)||0));const el=document.querySelector(`[data-gauge="${id}"]`);if(!el)return;const progress=el.querySelector('.progress');const value=el.querySelector('.gauge-copy b');const arc=75;progress.style.strokeDasharray=`${(arc*p/100).toFixed(3)} ${100-(arc*p/100)}`;value.textContent=`${Math.round(p)}%`;el.style.setProperty('--gauge-p',p)}
+
+async function renderStats(){try{const s=await window.check.getStats();systemSnapshot=s;const used=s.totalMem-s.freeMem;const mem=s.totalMem?Math.round(used/s.totalMem*100):0;$('#hello-user').textContent=s.username||'there';$('#profile-name').textContent=s.username||'there';$('#profile-handle').textContent=`@${s.username||'user'}`;$('#profile-device').textContent=s.hostname||'PC';$('#profile-system').textContent=s.platform||'Windows';$('#profile-cpu').textContent=(s.cpuModel||'Unknown CPU').replace(/\s+/g,' ');$('#dashboard-uptime').innerHTML=fmtUptimeDetailed(s.uptimeSec);ensureGauges();requestAnimationFrame(()=>{setGauge('cpu',s.cpuUsage);setGauge('mem',mem)})}catch(e){console.error(e)}}
+
+function updateClipboardDashboard(){const c=$('#dashboard-clip-count');if(c)c.textContent=String(clipboardData.length)}
+async function hydrateClipboardImages(){const targets=$$('[data-preview-id]');await Promise.all(targets.map(async img=>{try{const d=await window.check.getClipboardPreview(img.dataset.previewId);if(d)img.src=d}catch{}}))}
+function renderClipboard(){const q=($('#clip-search')?.value||'').trim().toLowerCase();const f=clipboardData.filter(item=>!q||`${item.type||''} ${item.text||''} ${item.name||''} ${item.path||''}`.toLowerCase().includes(q));$('#clip-count').textContent=`${f.length} item${f.length===1?'':'s'}`;const list=$('#clip-list');if(!f.length){list.innerHTML='<div class="glass-card empty-state">No clipboard items match.</div>';return}list.innerHTML=f.map(item=>{const[label,icon]=typeMeta(item);let body='';if(item.type==='text'||item.type==='link')body=`<div class="clip-text">${escapeHtml(item.text||'')}</div>`;else if(item.type==='image'||item.type==='image-file')body=`<img class="clip-media" data-preview-id="${escapeHtml(item.id)}" alt="Clipboard image" />`;else body=`<div class="file-preview"><span class="asset-icon ${item.type==='video'?'i-video':'i-file'}"></span><div><strong>${escapeHtml(item.name||'File')}</strong><small>${escapeHtml(item.isDirectory?'Folder':fmtBytes(item.size))}</small></div></div>`;const open=item.type!=='text';return `<article class="glass-card clip-card" data-id="${escapeHtml(item.id)}"><div class="clip-top"><div class="clip-kind"><span class="asset-icon ${icon}"></span>${label}</div><span class="clip-time" data-relative-time="${Number(item.time||Date.now())}">${relativeTime(item.time)}</span></div><div class="clip-body">${body}</div><div class="card-actions"><button class="card-action clip-copy" title="Copy again"><span class="asset-icon i-copy"></span></button>${open?'<button class="card-action clip-open" title="Open"><span class="asset-icon i-external"></span></button>':''}${(item.path||item.mediaPath)?'<button class="card-action clip-show" title="Show in folder"><span class="asset-icon i-folder"></span></button>':''}<button class="card-action danger clip-delete" title="Delete"><span class="asset-icon i-delete"></span></button></div></article>`}).join('');void hydrateClipboardImages()}
+async function loadClipboard(){clipboardData=await window.check.getClipboardHistory();renderClipboard();updateClipboardDashboard()}
+async function scanTemp(){$('#temp-summary').textContent='Scanning...';const r=await window.check.scanTemp();tempEntries=r.entries||[];const total=tempEntries.reduce((a,x)=>a+Number(x.size||0),0);$('#temp-summary').textContent=`${tempEntries.length} items · ${fmtBytes(total)}`;const list=$('#temp-list');if(!tempEntries.length){list.className='table-list empty-state';list.textContent='No temporary files found.';return}list.className='table-list';list.innerHTML=tempEntries.map((item,i)=>`<div class="table-row"><label><input type="checkbox" class="temp-check" data-i="${i}"/><span>${escapeHtml(item.name)}</span></label><span>${item.isDir?'Folder':'File'}</span><span>${item.isDir?'—':fmtBytes(item.size)}</span></div>`).join('')}
+async function cleanTemp(){const idx=$$('.temp-check:checked').map(x=>Number(x.dataset.i));const paths=idx.map(i=>tempEntries[i]?.path).filter(Boolean);if(!paths.length)return toast('Select at least one item.','error');const r=await window.check.cleanTemp(paths);toast(`Cleaned ${r.cleaned} item${r.cleaned===1?'':'s'}.`);addNotification(`Cleaner removed ${r.cleaned} item${r.cleaned===1?'':'s'}`,'success','Temporary files');await scanTemp()}
+async function loadStartup(){const list=$('#startup-list');list.innerHTML='<div class="glass-card empty-state">Loading startup apps...</div>';const rows=await window.check.listStartup();if(!rows.length){list.innerHTML='<div class="glass-card empty-state">No startup entries found.</div>';return}list.innerHTML=rows.map(row=>`<div class="glass-card startup-card"><div><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.command)}</small></div><button class="soft-button danger startup-remove" data-name="${escapeHtml(row.name)}"><span class="asset-icon i-delete"></span>Remove</button></div>`).join('')}
+async function loadPins(){const pins=await window.check.listPins();const list=$('#pins-list');if(!pins.length){list.innerHTML='<div class="glass-card empty-state">No pinned items yet.</div>';return}list.innerHTML=pins.map(pin=>`<div class="glass-card pin-card"><div class="type-icon"><span class="asset-icon i-pin"></span></div><strong>${escapeHtml(pin.name)}</strong><small>${escapeHtml(pin.path)}</small><div class="card-actions"><button class="soft-button pin-launch" data-path="${escapeHtml(pin.path)}">Open</button><button class="card-action danger pin-remove" data-path="${escapeHtml(pin.path)}"><span class="asset-icon i-delete"></span></button></div></div>`).join('')}
+function syncLoginToggles(value){$('#login-toggle').checked=value;$('#dashboard-login-toggle').checked=value}
+function syncMotionToggles(value){$('#motion-toggle').checked=value;$('#dashboard-motion-toggle').checked=value;document.body.classList.toggle('no-motion',!value)}
+
+function bindEvents(){
+  $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>switchPage(btn.dataset.page)));$$('[data-go]').forEach(btn=>btn.addEventListener('click',()=>switchPage(btn.dataset.go)));
+  $('#min-btn').addEventListener('click',()=>window.check.winMinimize());$('#max-btn').addEventListener('click',()=>window.check.winMaximize());$('#close-btn').addEventListener('click',()=>window.check.winClose());
+  $('#clear-notifications').addEventListener('click',()=>{notifications=[];renderNotifications()});
+  $('#refresh-clip').addEventListener('click',async()=>{clipboardData=await window.check.refreshClipboard();renderClipboard();updateClipboardDashboard();toast('Clipboard refreshed.')});
+  $('#clear-clip').addEventListener('click',async()=>{clipboardData=await window.check.clearClipboardHistory();renderClipboard();updateClipboardDashboard();addNotification('Clipboard history cleared','info','Clipboard');toast('Clipboard history cleared.')});
+  $('#clip-search').addEventListener('input',renderClipboard);
+  $('#clip-list').addEventListener('contextmenu',e=>{const card=e.target.closest('.clip-card');if(!card)return;e.preventDefault();openClipboardContextMenu(e,card.dataset.id)});
+  $('#clip-context-menu').addEventListener('click',e=>{const option=e.target.closest('[data-context-action]');if(option)runContextAction(option.dataset.contextAction)});
+  document.addEventListener('pointerdown',e=>{if(!e.target.closest('#clip-context-menu'))closeContextMenu()});window.addEventListener('blur',closeContextMenu);
+  $('#clip-list').addEventListener('click',async e=>{const card=e.target.closest('.clip-card');if(!card)return;const id=card.dataset.id;if(e.target.closest('.clip-copy')){const r=await window.check.copyClipboardItem(id);toast(r.ok?'Copied.':'Could not copy.',r.ok?'success':'error')}if(e.target.closest('.clip-open')){const r=await window.check.openClipboardItem(id);if(!r.ok)toast('Could not open item.','error')}if(e.target.closest('.clip-show')){const r=await window.check.showClipboardItem(id);if(!r.ok)toast('Could not locate item.','error')}if(e.target.closest('.clip-delete')){clipboardData=await window.check.removeClipboardItem(id);renderClipboard();updateClipboardDashboard()}});
+  $('#scan-temp').addEventListener('click',scanTemp);$('#clean-temp').addEventListener('click',cleanTemp);$('#select-all-temp').addEventListener('change',e=>$$('.temp-check').forEach(x=>x.checked=e.target.checked));
+  $('#refresh-startup').addEventListener('click',loadStartup);$('#startup-list').addEventListener('click',async e=>{const btn=e.target.closest('.startup-remove');if(!btn)return;const r=await window.check.removeStartup(btn.dataset.name);toast(r.ok?'Startup entry removed.':'Could not remove entry.',r.ok?'success':'error');if(r.ok){addNotification(`${btn.dataset.name} removed from startup`,'success','Startup apps');loadStartup()}});
+  $('#take-shot').addEventListener('click',async()=>{const r=await window.check.takeScreenshot();if(r.ok){$('#shot-preview').textContent=r.file;toast('Screenshot saved.');addNotification('Screenshot saved','success','Capture')}else toast(r.error||'Capture failed.','error')});$('#open-shot-folder').addEventListener('click',()=>window.check.openScreenshotFolder());
+  $('#add-pin').addEventListener('click',async()=>{await window.check.addPin();loadPins()});$('#pins-list').addEventListener('click',async e=>{const launch=e.target.closest('.pin-launch'),remove=e.target.closest('.pin-remove');if(launch)await window.check.launchPin(launch.dataset.path);if(remove){await window.check.removePin(remove.dataset.path);loadPins()}});
+  const loginChanged=async e=>{syncLoginToggles(e.target.checked);await window.check.setSelfAtLogin(e.target.checked);addNotification(`Launch at login ${e.target.checked?'enabled':'disabled'}`,'info','Settings')};$('#login-toggle').addEventListener('change',loginChanged);$('#dashboard-login-toggle').addEventListener('change',loginChanged);
+  const motionChanged=e=>syncMotionToggles(e.target.checked);$('#motion-toggle').addEventListener('change',motionChanged);$('#dashboard-motion-toggle').addEventListener('change',motionChanged);
+  $('#check-updates-btn').addEventListener('click',async()=>{const r=await window.check.checkForUpdates();if(r?.dev)toast('Update checks work in the installed build.')});$('#install-update-btn').addEventListener('click',()=>window.check.installUpdate());
 }
 
-// ---------- screenshot ----------
-document.getElementById('take-shot').onclick = async () => {
-  const res = await window.check.takeScreenshot();
-  if (res.ok) {
-    toast('Screenshot saved');
-    document.getElementById('shot-preview').innerHTML = `<div class="sub">Saved to: ${res.file}</div>`;
-  } else {
-    toast('Screenshot failed: ' + res.error);
-  }
-};
-document.getElementById('open-shot-folder').onclick = () => window.check.openScreenshotFolder();
-
-// ---------- quick launcher pins ----------
-async function refreshPins() {
-  const pins = await window.check.listPins();
-  const list = document.getElementById('pins-list');
-  if (!pins.length) { list.innerHTML = `<div class="sub">No pins yet. Add an app or file to launch it instantly.</div>`; return; }
-  list.innerHTML = pins.map((p, i) => `
-    <div class="list-item" style="animation-delay:${i * 0.02}s">
-      <span>${escapeHtml(p.name)}<div class="meta">${escapeHtml(p.path)}</div></span>
-      <button data-path="${escapeHtml(p.path)}" class="remove-pin">Remove</button>
-    </div>
-  `).join('');
-  list.querySelectorAll('.remove-pin').forEach(btn => {
-    btn.onclick = async () => { await window.check.removePin(btn.dataset.path); refreshPins(); };
-  });
+async function init(){bindEvents();appInfo=await window.check.getAppInfo();$('#app-version').textContent=`v${appInfo.version}`;$('#dashboard-version').textContent=appInfo.version;try{const login=await window.check.getSelfAtLogin();syncLoginToggles(Boolean(login.openAtLogin))}catch{}syncMotionToggles(true);await Promise.all([renderStats(),loadClipboard()]);addNotification(`Check ${appInfo.version} is ready`,'success','System',Date.now(),`ready-${appInfo.version}`);setInterval(renderStats,2500);setInterval(refreshRelativeTimes,1000);
+  let lastTopId=clipboardData[0]?.id;
+  window.check.onClipboardHistory(items=>{const next=Array.isArray(items)?items:[];const newest=next[0];const isNew=newest&&newest.id!==lastTopId;clipboardData=next;lastTopId=newest?.id;if(currentPage==='clipboard')renderClipboard();updateClipboardDashboard();if(isNew){const [label]=typeMeta(newest);const title=itemTitle(newest).replace(/\s+/g,' ').trim();addNotification(title?`${label}: ${title.slice(0,64)}`:`New ${label.toLowerCase()} copied`,'info','Clipboard',newest.time)}});
+  window.check.onUpdateStatus(({status,payload})=>{let text='Check is ready.';let title='Update status changed',kind='info';if(status==='checking'){text='Checking for updates...';title='Checking for updates'}if(status==='available'){text=`Version ${payload?.version||''} is available.`;title=text}if(status==='not-available'){text='You are up to date.';title=text;kind='success'}if(status==='downloading'){text=`Downloading ${Math.round(payload?.percent||0)}%...`;title=text}if(status==='downloaded'){text=`Version ${payload?.version||''} is ready.`;title=text;kind='success';$('#install-update-btn').hidden=false}if(status==='error'){text='Update check failed.';title=text;kind='warn'}$('#update-status-text').textContent=text;addNotification(title,kind,'Updates')})
 }
-document.getElementById('add-pin').onclick = async () => { await window.check.addPin(); refreshPins(); };
-
-// ---------- settings ----------
-async function refreshSettings() {
-  const s = await window.check.getSelfAtLogin();
-  document.getElementById('login-toggle').checked = !!s.openAtLogin;
-}
-document.getElementById('login-toggle').onchange = async (e) => {
-  await window.check.setSelfAtLogin(e.target.checked);
-  toast(e.target.checked ? 'Check will launch at login' : 'Removed from login items');
-};
-document.getElementById('check-updates-btn').onclick = () => window.check.checkForUpdates();
-document.getElementById('install-update-btn').onclick = () => window.check.installUpdate();
-
-// ---------- update status (badge + settings) ----------
-const pill = document.getElementById('update-pill');
-const pillText = document.getElementById('update-pill-text');
-const statusText = document.getElementById('update-status-text');
-const installRow = document.getElementById('install-update-row');
-
-window.check.onUpdateStatus(({ status, payload }) => {
-  pill.hidden = false;
-  if (status === 'checking') { pillText.textContent = 'Checking for updates…'; }
-  if (status === 'available') { pillText.textContent = `Downloading v${payload.version}…`; statusText.textContent = `Update v${payload.version} found, downloading…`; }
-  if (status === 'not-available') { pillText.textContent = 'Up to date'; statusText.textContent = 'Up to date.'; setTimeout(() => pill.hidden = true, 2500); }
-  if (status === 'downloading') { pillText.textContent = `Downloading… ${Math.round(payload.percent)}%`; }
-  if (status === 'downloaded') {
-    pillText.textContent = 'Update ready — restart to install';
-    statusText.textContent = `Version ${payload.version} downloaded.`;
-    installRow.hidden = false;
-    toast('Update downloaded — restart anytime to install');
-  }
-  if (status === 'error') {
-    pillText.textContent = 'Update check unavailable';
-    statusText.textContent = 'Automatic updates aren\'t available for this build — check back with whoever sent you the app for new versions.';
-    setTimeout(() => pill.hidden = true, 2500);
-  }
-});
-
-// ---------- init ----------
-refreshStats();
+init();

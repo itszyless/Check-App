@@ -1,0 +1,8 @@
+FONT
+
+The UI is already configured for:
+  SF Pro Display Medium (500)
+  SF Pro Display Bold (700)
+
+If SF Pro Display is installed on your Windows PC, Check will use it automatically.
+Font files are intentionally not bundled in this ZIP.

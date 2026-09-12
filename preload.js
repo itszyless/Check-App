@@ -1,44 +1,55 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('check', {
-  // window controls
   winMinimize: () => ipcRenderer.send('win:minimize'),
   winMaximize: () => ipcRenderer.send('win:maximize'),
   winClose: () => ipcRenderer.send('win:close'),
 
-  // updates
+  getAppInfo: () => ipcRenderer.invoke('app:info'),
+
   checkForUpdates: () => ipcRenderer.invoke('updates:check'),
   installUpdate: () => ipcRenderer.invoke('updates:install'),
-  onUpdateStatus: (cb) => ipcRenderer.on('update-status', (_e, data) => cb(data)),
+  onUpdateStatus: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on('update-status', handler);
+    return () => ipcRenderer.removeListener('update-status', handler);
+  },
 
-  // system
   getStats: () => ipcRenderer.invoke('sys:stats'),
 
-  // temp cleaner
   scanTemp: () => ipcRenderer.invoke('temp:scan'),
   cleanTemp: (paths) => ipcRenderer.invoke('temp:clean', paths),
 
-  // startup manager
   listStartup: () => ipcRenderer.invoke('startup:list'),
   removeStartup: (name) => ipcRenderer.invoke('startup:remove', name),
   setSelfAtLogin: (enabled) => ipcRenderer.invoke('startup:setSelfAtLogin', enabled),
   getSelfAtLogin: () => ipcRenderer.invoke('startup:getSelfAtLogin'),
 
-  // screenshot
   takeScreenshot: () => ipcRenderer.invoke('shot:capture'),
   openScreenshotFolder: () => ipcRenderer.invoke('shot:openFolder'),
 
-  // clipboard
   getClipboardHistory: () => ipcRenderer.invoke('clip:getHistory'),
-  copyToClipboard: (text) => ipcRenderer.invoke('clip:copy', text),
+  refreshClipboard: () => ipcRenderer.invoke('clip:refresh'),
+  getClipboardPreview: (id) => ipcRenderer.invoke('clip:preview', id),
+  copyClipboardItem: (id) => ipcRenderer.invoke('clip:copyItem', id),
+  openClipboardItem: (id) => ipcRenderer.invoke('clip:openItem', id),
+  showClipboardItem: (id) => ipcRenderer.invoke('clip:showItem', id),
+  removeClipboardItem: (id) => ipcRenderer.invoke('clip:remove', id),
   clearClipboardHistory: () => ipcRenderer.invoke('clip:clear'),
-  onClipboardHistory: (cb) => ipcRenderer.on('clipboard-history', (_e, data) => cb(data)),
+  onClipboardHistory: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on('clipboard-history', handler);
+    return () => ipcRenderer.removeListener('clipboard-history', handler);
+  },
 
-  // quick launcher pins
   listPins: () => ipcRenderer.invoke('pins:list'),
   addPin: () => ipcRenderer.invoke('pins:add'),
   removePin: (p) => ipcRenderer.invoke('pins:remove', p),
   launchPin: (p) => ipcRenderer.invoke('pins:launch', p),
-  onLauncherReset: (cb) => ipcRenderer.on('launcher-reset', () => cb()),
+  onLauncherReset: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('launcher-reset', handler);
+    return () => ipcRenderer.removeListener('launcher-reset', handler);
+  },
   hideLauncher: () => ipcRenderer.send('launcher:hide')
 });
