@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+<style>
+  html,body{ margin:0; height:100%; background:transparent; font-family:'Segoe UI',sans-serif; }
+  .box{
+    margin:6px; border-radius:14px; overflow:hidden;
+    background: rgba(18,20,28,0.92); border:1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: pop .18s cubic-bezier(.2,.9,.25,1);
+  }
+  @keyframes pop{ from{ opacity:0; transform: scale(0.96) translateY(-6px);} to{ opacity:1; transform:none; } }
+  input{
+    width:100%; box-sizing:border-box; padding:14px 16px; font-size:16px;
+    background:transparent; border:none; outline:none; color:#eef0f5;
+  }
+  .results{ max-height:0; overflow:hidden; transition: max-height .2s ease; }
+  .results.open{ max-height:220px; overflow-y:auto; }
+  .item{ padding:10px 16px; color:#cdd2e0; font-size:13px; cursor:pointer; display:flex; justify-content:space-between; }
+  .item:hover, .item.sel{ background: rgba(124,157,255,0.18); color:#fff; }
+  .hint{ color:#8891a5; font-size:11px; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <input id="q" placeholder="Search pinned apps & files… (Esc to close)" autofocus />
+    <div class="results" id="results"></div>
+  </div>
+  <script>
+    const input = document.getElementById('q');
+    const resultsEl = document.getElementById('results');
+    let pins = [];
+    let filtered = [];
+    let selected = 0;
+
+    async function load() { pins = await window.check.listPins(); }
+
+    function render() {
+      const term = input.value.trim().toLowerCase();
+      filtered = term ? pins.filter(p => p.name.toLowerCase().includes(term)) : pins;
+      resultsEl.classList.toggle('open', filtered.length > 0);
+      resultsEl.innerHTML = filtered.map((p, i) => `
+        <div class="item ${i === selected ? 'sel' : ''}" data-i="${i}">
+          <span>${p.name}</span><span class="hint">Enter</span>
+        </div>
+      `).join('');
+      resultsEl.querySelectorAll('.item').forEach(el => {
+        el.onclick = () => launch(filtered[+el.dataset.i]);
+      });
+    }
+
+    function launch(p) { if (p) window.check.launchPin(p.path); }
+
+    input.addEventListener('input', () => { selected = 0; render(); });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { window.check.hideLauncher(); }
+      if (e.key === 'ArrowDown') { selected = Math.min(selected + 1, filtered.length - 1); render(); }
+      if (e.key === 'ArrowUp') { selected = Math.max(selected - 1, 0); render(); }
+      if (e.key === 'Enter') { launch(filtered[selected]); }
+    });
+
+    window.check.onLauncherReset(async () => {
+      input.value = ''; selected = 0;
+      await load();
+      render();
+      input.focus();
+    });
+
+    load().then(render);
+  </script>
+</body>
+</html>

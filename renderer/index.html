@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;" />
+<title>Check</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="titlebar">
+    <div class="titlebar-drag">
+      <span class="logo-dot"></span>
+      <span class="brand">Check</span>
+    </div>
+    <div class="win-controls">
+      <button id="min-btn" title="Minimize">&#8211;</button>
+      <button id="max-btn" title="Maximize">&#9633;</button>
+      <button id="close-btn" title="Close to tray">&times;</button>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <nav class="sidebar">
+      <div class="nav-list">
+        <button class="nav-item active" data-page="dashboard"><span class="nav-icon">◈</span>Dashboard</button>
+        <button class="nav-item" data-page="clipboard"><span class="nav-icon">▤</span>Clipboard</button>
+        <button class="nav-item" data-page="temp"><span class="nav-icon">◐</span>Temp Cleaner</button>
+        <button class="nav-item" data-page="startup"><span class="nav-icon">▶</span>Startup Apps</button>
+        <button class="nav-item" data-page="screenshot"><span class="nav-icon">▣</span>Screenshot</button>
+        <button class="nav-item" data-page="launcher"><span class="nav-icon">✦</span>Quick Launcher</button>
+        <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span>Settings</button>
+      </div>
+      <div class="nav-underline"></div>
+      <div class="update-pill" id="update-pill" hidden>
+        <span class="pulse-dot"></span>
+        <span id="update-pill-text">Checking for updates…</span>
+      </div>
+    </nav>
+
+    <main class="content">
+      <section class="page active" id="page-dashboard">
+        <h1>System Dashboard</h1>
+        <p class="sub">Live snapshot of this machine.</p>
+        <div class="grid" id="stats-grid"></div>
+      </section>
+
+      <section class="page" id="page-clipboard">
+        <h1>Clipboard Manager</h1>
+        <p class="sub">Everything you've copied recently. Click any entry to copy it again.</p>
+        <div class="row">
+          <button class="btn ghost" id="clear-clip">Clear history</button>
+        </div>
+        <div class="list" id="clip-list"></div>
+      </section>
+
+      <section class="page" id="page-temp">
+        <h1>Temp Cleaner</h1>
+        <p class="sub">Safely review and clear your temp folder.</p>
+        <div class="row">
+          <button class="btn" id="scan-temp">Scan</button>
+          <button class="btn danger" id="clean-temp">Clean selected</button>
+          <span class="sub" id="temp-path"></span>
+        </div>
+        <div class="list" id="temp-list"></div>
+      </section>
+
+      <section class="page" id="page-startup">
+        <h1>Startup Apps</h1>
+        <p class="sub">Programs launching automatically with Windows.</p>
+        <div class="list" id="startup-list"></div>
+      </section>
+
+      <section class="page" id="page-screenshot">
+        <h1>Screenshot</h1>
+        <p class="sub">Capture your screen instantly, saved to Pictures.</p>
+        <div class="row">
+          <button class="btn" id="take-shot">Capture screen</button>
+          <button class="btn ghost" id="open-shot-folder">Open folder</button>
+        </div>
+        <div id="shot-preview"></div>
+      </section>
+
+      <section class="page" id="page-launcher">
+        <h1>Quick Launcher</h1>
+        <p class="sub">Press <kbd>Ctrl+Shift+Space</kbd> anywhere to open a spotlight-style launcher for your pinned apps and files.</p>
+        <div class="row">
+          <button class="btn" id="add-pin">Pin a file or app</button>
+        </div>
+        <div class="list" id="pins-list"></div>
+      </section>
+
+      <section class="page" id="page-settings">
+        <h1>Settings</h1>
+        <p class="sub">Updates and preferences.</p>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div>
+              <div class="settings-title">Launch Check at login</div>
+              <div class="settings-desc">Start automatically when Windows starts.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="login-toggle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-title">Software updates</div>
+              <div class="settings-desc" id="update-status-text">Up to date.</div>
+            </div>
+            <button class="btn ghost" id="check-updates-btn">Check now</button>
+          </div>
+          <div class="settings-row" id="install-update-row" hidden>
+            <div>
+              <div class="settings-title">Update ready</div>
+              <div class="settings-desc">Restart to install the latest version.</div>
+            </div>
+            <button class="btn" id="install-update-btn">Restart &amp; Install</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast-stack" id="toast-stack"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
