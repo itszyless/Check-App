@@ -1,6 +1,6 @@
 {
   "name": "check",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Check — a fast Windows utility app: system dashboard, clipboard manager, temp cleaner, startup manager, quick launcher and screenshots, with automatic updates.",
   "main": "main.js",
   "author": "You",
