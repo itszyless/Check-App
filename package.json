@@ -1,7 +1,7 @@
 {
   "name": "check",
-  "version": "1.6.0",
-  "description": "Check \u2014 a fast Windows utility app with dashboard, clipboard history, temp cleaner, startup manager, screenshots, quick launcher and automatic updates.",
+  "version": "1.6.1",
+  "description": "Check — a fast Windows utility app with dashboard, clipboard history, temp cleaner, startup manager, screenshots, quick launcher and automatic updates.",
   "main": "main.js",
   "author": "itszyless",
   "license": "MIT",
